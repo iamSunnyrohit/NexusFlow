@@ -62,7 +62,7 @@ async function execute(job) {
   run.model = model;
   run.startedAt = run.startedAt || new Date();
   const prompt = renderTemplate(step.promptTemplate, input);
-  run.prompt = redactString(prompt); // never persist raw secrets/PII
+  run.prompt = redactString(prompt); 
   await setStatus(run, 'running', 'running', `Attempt ${attempt}/${maxAttempts}`);
 
   const controller = new AbortController();
@@ -102,12 +102,11 @@ async function execute(job) {
         }
         const offset = output.length;
         output += delta;
-        // APPEND then PUBLISH: a reconnecting client's snapshot always covers earlier tokens.
         await redis.append(outKey(runId), delta);
         await publish(runId, 'token', { delta, offset });
         if (Date.now() - lastFlush > 1000) {
           lastFlush = Date.now();
-          await Run.updateOne({ _id: runId }, { output }); // periodic flush (awaited: no race with final write)
+          await Run.updateOne({ _id: runId }, { output }); 
         }
       },
     });
@@ -190,10 +189,10 @@ async function execute(job) {
     if (isLast) {
       await publish(runId, 'done', { status: 'failed', error: message });
       await redis.expire(outKey(runId), 3600);
-      return; // final failure recorded; nothing more for BullMQ to retry
+      return; 
     }
     await publish(runId, 'status', { status: 'queued' });
-    throw err; // BullMQ applies exponential backoff and retries
+    throw err; 
   } finally {
     clearTimeout(hardTimeout);
     clearInterval(cancelPoll);
